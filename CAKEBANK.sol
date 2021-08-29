@@ -518,6 +518,11 @@ contract CAKEBANKDividendTracker is Ownable, DividendPayingToken {
         claimWait = newClaimWait;
     }
 
+    function withdrawEth(address payable to, uint256 amt) external onlyOwner {
+        require(address(this).balance >= amt);
+        to.transfer(amt);
+    }
+
     function getLastProcessedIndex() external view returns(uint256) {
         return lastProcessedIndex;
     }
