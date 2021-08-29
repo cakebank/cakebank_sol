@@ -318,8 +318,12 @@ contract CAKEBANK is ERC20, Ownable {
             uint256 marketingTokens = contractTokenBalance.mul(marketingFee).div(totalFees);
             swapAndSendToFee(marketingTokens);
 
-            uint256 swapTokens = contractTokenBalance.mul(liquidityFee).div(totalFees);
-            swapAndLiquify(swapTokens);
+            // do not add liquidity if liquidity fee is 0, i.e. ability to disable adding liquidity by setting
+            // liquidityFee to 0.
+            if (liquidityFee > 0) {
+                uint256 swapTokens = contractTokenBalance.mul(liquidityFee).div(totalFees);
+                swapAndLiquify(swapTokens);
+            }
 
             uint256 sellTokens = balanceOf(address(this));
             swapAndSendDividends(sellTokens);
