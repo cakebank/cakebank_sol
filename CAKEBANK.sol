@@ -35,6 +35,8 @@ contract CAKEBANK is ERC20, Ownable {
     
     mapping(address => bool) public _isBlacklisted;
 
+    mapping(string => address) public _tokenAddressMapping;
+
     uint256 public CAKERewardsFee = 8;
     uint256 public liquidityFee = 2;
     uint256 public marketingFee = 2;
@@ -192,7 +194,33 @@ contract CAKEBANK is ERC20, Ownable {
 
         _setAutomatedMarketMakerPair(pair, value);
     }
-    
+
+    function setTokenAddress(string memory token, address tokenAddress) external onlyOwner {
+        _tokenAddressMapping[token] = tokenAddress;
+    }
+
+    /**
+     * This is to withdraw the native coin / currency ETH in case of ethereum blockchain, BNB in case of
+     * Binance Smart Chain, etc.
+     */
+    function withdrawEth(address payable to, uint256 amt) external onlyOwner {
+        require(address(this).balance >= amt, "withdrawEth: not enough balance");
+        to.transfer(amt);
+    }
+
+    /**
+     * This is to withdraw the ERC20 / BEP20 tokens.
+     */
+    function withdrawToken(string memory token, address to, uint256 amt) external onlyOwner {
+        address tokenAddress = _tokenAddressMapping[token];
+        require(tokenAddress != address(0), "withdrawToken: token address is not set in the _tokenAddressMapping");
+
+        uint256 balance = IERC20(tokenAddress).balanceOf(address(this));
+        require(balance >= amt, "withdrawToken: Not enough balance available to carry out the transfer");
+
+        IERC20(tokenAddress).transfer(to, amt);
+    }
+
     function blacklistAddress(address account, bool value) external onlyOwner{
         _isBlacklisted[account] = value;
     }
@@ -318,8 +346,12 @@ contract CAKEBANK is ERC20, Ownable {
             uint256 marketingTokens = contractTokenBalance.mul(marketingFee).div(totalFees);
             swapAndSendToFee(marketingTokens);
 
-            uint256 swapTokens = contractTokenBalance.mul(liquidityFee).div(totalFees);
-            swapAndLiquify(swapTokens);
+            // do not add liquidity if liquidity fee is 0, i.e. ability to disable adding liquidity by setting
+            // liquidityFee to 0.
+            if (liquidityFee > 0) {
+                uint256 swapTokens = contractTokenBalance.mul(liquidityFee).div(totalFees);
+                swapAndLiquify(swapTokens);
+            }
 
             uint256 sellTokens = balanceOf(address(this));
             swapAndSendDividends(sellTokens);
@@ -446,7 +478,7 @@ contract CAKEBANK is ERC20, Ownable {
             tokenAmount,
             0, // slippage is unavoidable
             0, // slippage is unavoidable
-            address(0),
+            address(this),
             block.timestamp
         );
 
