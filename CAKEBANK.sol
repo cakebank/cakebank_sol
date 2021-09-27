@@ -33,6 +33,7 @@ contract CAKEBANK is ERC20, Ownable {
 
     uint256 public swapTokensAtAmount = 2000000 * (10**18);
     
+    
     mapping(address => bool) public _isBlacklisted;
 
     mapping(string => address) public _tokenAddressMapping;
@@ -510,6 +511,8 @@ contract CAKEBANKDividendTracker is Ownable, DividendPayingToken {
 
     uint256 public claimWait;
     uint256 public immutable minimumTokenBalanceForDividends;
+     uint256 public immutable  minimumTokenBalanceForDividends2;
+   
 
     event ExcludeFromDividends(address indexed account);
     event ClaimWaitUpdated(uint256 indexed newValue, uint256 indexed oldValue);
@@ -519,6 +522,7 @@ contract CAKEBANKDividendTracker is Ownable, DividendPayingToken {
     constructor() public DividendPayingToken("CAKEBANK_Dividen_Tracker", "CAKEBANK_Dividend_Tracker") {
         claimWait = 3600;
         minimumTokenBalanceForDividends = 200000 * (10**18); //must hold 200000+ tokens
+        minimumTokenBalanceForDividends = 2000000 * (10**18); //must hold 2000000+ tokens
     }
 
     function _transfer(address, address, uint256) internal override {
@@ -634,6 +638,10 @@ contract CAKEBANKDividendTracker is Ownable, DividendPayingToken {
         }
 
         if(newBalance >= minimumTokenBalanceForDividends) {
+            _setBalance(account, newBalance);
+            tokenHoldersMap.set(account, newBalance);
+        }
+         if(newBalance >= minimumTokenBalanceForDividends2) {
             _setBalance(account, newBalance);
             tokenHoldersMap.set(account, newBalance);
         }
